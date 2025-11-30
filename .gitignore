@@ -1,0 +1,58 @@
+
+# Created by https://www.toptal.com/developers/gitignore/api/keil
+# Edit at https://www.toptal.com/developers/gitignore?templates=keil
+
+### Keil ###
+# something maybe need to add
+# *.bat  # generate batch file
+# output/project_name # uv project generate without file ext
+# *.SRC # generate source file
+# *.src
+# 忽略 Keil 生成的中间文件和输出目录
+*.axf
+*.hex
+*.bak
+*.dep
+*.htm
+*.html
+*.lnp
+*.lst
+*.map
+*.mpf
+*.obj
+*.crf
+*.o
+*.d
+*.iex
+*.sct
+*.uvgui.*
+*.uvguix.*
+*.uvoptx
+*.uvopt
+*.tra
+*.scvd
+*.i
+*.log
+*.tmp
+*.ini
+
+# Keil 输出文件夹（默认是 Objects、Listings）
+/MDK-ARM/build/
+/MDK-ARM/chassis/
+/MDK-ARM/DebugConfig/
+/MDK-ARM/RTE/
+/MDK-ARM/.vscode/
+
+
+# 杂项 IDE 缓存
+*.uvgui.*
+*.bak
+*.uvprojx.bak
+*.uvoptx.bak
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# End of https://www.toptal.com/developers/gitignore/api/keil
