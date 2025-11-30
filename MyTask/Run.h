@@ -39,5 +39,7 @@ typedef struct{
 
 
 void Motor_Drive(void *param);
+void MotorSendTask(void *param);// 将电机的数据发送到PC上
+void MotorRecTask(void *param);// 从PC接收电机的期望值
 
 #endif

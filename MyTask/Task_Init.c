@@ -9,6 +9,8 @@ extern SemaphoreHandle_t Can1_semaphore;
 extern SemaphoreHandle_t Can2_semaphore;
 
 extern TaskHandle_t Motor_Drive_Handle;
+extern TaskHandle_t MotorSendTask_Handle;
+extern TaskHandle_t MotorRecTask_Handle;
 
 void Task_Init(void)
 {
@@ -21,7 +23,14 @@ void Task_Init(void)
     HAL_CAN_ActivateNotification(&hcan1,CAN_IT_TX_MAILBOX_EMPTY);
     HAL_CAN_ActivateNotification(&hcan2,CAN_IT_TX_MAILBOX_EMPTY);
 
+    DWT_Init(168);
+    
+    vPortEnterCritical();
 
+    xTaskCreate(MotorSendTask, "MotorSendTask", 128, NULL, 4, MotorSendTask_Handle);//将数据发送到PC
+    xTaskCreate(MotorRecTask, "MotorRecTask", 128, NULL, 4, MotorRecTask_Handle);//将数据发送到PC
+
+    vPortExitCritical();
 
 }
 

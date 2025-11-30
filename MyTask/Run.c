@@ -103,8 +103,8 @@ void Motor_Drive(void *param)
 }
 
 Arm_t arm_t;
-// 将电机的数据发送到PC上
-void MotorSendTask(void *param)
+TaskHandle_t MotorSendTask_Handle;
+void MotorSendTask(void *param)// 将电机的数据发送到PC上
 {
 	TickType_t Last_wake_time = xTaskGetTickCount();
 
@@ -143,7 +143,8 @@ void CDC_Recv_Cb(uint8_t *src, uint16_t size)
 	
 }
 
-void MotorRecvTask(void *param)// 从PC接收电机的期望值
+TaskHandle_t MotorRecTask_Handle;
+void MotorRecTask(void *param)// 从PC接收电机的期望值
 {
 	USB_CDC_Init(CDC_Recv_Cb, NULL, NULL);
 	TickType_t last_wake_time = xTaskGetTickCount();
