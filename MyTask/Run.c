@@ -86,7 +86,7 @@ void Motor_Drive(void *param)
 
 	for(;;)
 	{
-		for(uint8_t i; i < 4; i++)
+		for(uint8_t i = 0; i < 4; i++)
 		{
 			PID_Control(Joint[i].Rs_motor.state.rad, Joint[i].exp_rad + Joint[i].pos_offset, &Joint[i].pos_pid);
 			PID_Control(Joint[i].Rs_motor.state.omega * Joint[i].inv_motor, Joint[i].pos_pid.pid_out, &Joint[i].vel_pid);

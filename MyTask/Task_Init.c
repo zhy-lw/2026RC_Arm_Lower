@@ -3,6 +3,7 @@
 #include "task.h"
 #include "can.h"
 #include "Run.h"
+#include "stdbool.h"
 
 extern Joint_t Joint[5];
 extern SemaphoreHandle_t Can1_semaphore;
@@ -26,9 +27,9 @@ void Task_Init(void)
     DWT_Init(168);
     
     vPortEnterCritical();
-
-    xTaskCreate(MotorSendTask, "MotorSendTask", 128, NULL, 4, MotorSendTask_Handle);//将数据发送到PC
-    xTaskCreate(MotorRecTask, "MotorRecTask", 128, NULL, 4, MotorRecTask_Handle);//将数据发送到PC
+    
+    xTaskCreate(MotorSendTask, "MotorSendTask", 128, NULL, 4, &MotorSendTask_Handle);//将数据发送到PC
+    xTaskCreate(MotorRecTask, "MotorRecTask", 128, NULL, 4, &MotorRecTask_Handle);//将数据发送到PC
 
     vPortExitCritical();
 
@@ -43,10 +44,10 @@ void CAN_Rec_Handle(void *pvParameters)
         {
             uint8_t buf[8];
             uint32_t ID = CAN_Receive_DataFrame(&hcan1, buf);
-            RobStrideRecv_Handle(&Joint[0].Rs_motor, &hcan1, ID, buf);
-            RobStrideRecv_Handle(&Joint[1].Rs_motor, &hcan1, ID, buf);
-            RobStrideRecv_Handle(&Joint[2].Rs_motor, &hcan1, ID, buf);
-            RobStrideRecv_Handle(&Joint[3].Rs_motor, &hcan1, ID, buf);
+            for (uint8_t i = 0; i < 4; i++)
+            {
+                RobStrideRecv_Handle(&Joint[i].Rs_motor, &hcan1, ID, buf);
+            }
         }
 
         if(xSemaphoreTake(Can2_semaphore, pdMS_TO_TICKS(0)) == pdTRUE)
@@ -64,21 +65,24 @@ void MotorInitTask(void *pvParameters)
 {
     TickType_t last_wake_time = xTaskGetTickCount();
 
+    uint8_t count = 0;
+
     for(;;)
     {
         if(xSemaphoreTake(Can1_semaphore, portMAX_DELAY) == pdTRUE)
         {
-            for(uint8_t i; i < 4; i++)
+            for(uint8_t i = 0; i < 4; i++)
             {
                 Joint[i].pos_offset = Joint[i].Rs_motor.state.rad;
+
             }
+            count++;
         }
 
-        if(Joint[3].pos_offset != 0)
+        if(count > 3)
         {
             xTaskCreate(Motor_Drive, "Motor_Drive", 512, NULL, 4, &Motor_Drive_Handle);
-             // 删除自己
-            vTaskDelete(NULL);
+            vTaskDelete(NULL); // 删除自己
         }
     }
 
