@@ -76,7 +76,7 @@ void Motor_Drive(void *param)
 	RobStrideSetMode(&Joint[1].Rs_motor, RobStride_Torque);
 	RobStrideSetMode(&Joint[2].Rs_motor, RobStride_Torque);
 	RobStrideSetMode(&Joint[3].Rs_motor, RobStride_Torque);
-	vTaskDelay(100);
+	vTaskDelay(200);
 	RobStrideEnable(&Joint[0].Rs_motor);
 	RobStrideEnable(&Joint[1].Rs_motor);
 	RobStrideEnable(&Joint[2].Rs_motor);
@@ -90,12 +90,12 @@ void Motor_Drive(void *param)
 		{
 			PID_Control(Joint[i].Rs_motor.state.rad, Joint[i].exp_rad + Joint[i].pos_offset, &Joint[i].pos_pid);
 			PID_Control(Joint[i].Rs_motor.state.omega * Joint[i].inv_motor, Joint[i].pos_pid.pid_out, &Joint[i].vel_pid);
-			RobStrideTorqueControl(&Joint[i].Rs_motor, Joint[i].vel_pid.pid_out * Joint[i].inv_motor);
+			//RobStrideTorqueControl(&Joint[i].Rs_motor, Joint[i].vel_pid.pid_out * Joint[i].inv_motor);
 		}
 		PID_Control(Joint[4].RM_motor.motor.Angle_DEG, Joint[4].exp_rad, &Joint[4].RM_motor.pos_pid);
 		PID_Control(Joint[4].RM_motor.motor.Speed * Joint[4].inv_motor, Joint[4].RM_motor.pos_pid.pid_out, &Joint[4].RM_motor.vel_pid);
 		can_buf[0] = Joint[4].RM_motor.vel_pid.pid_out * Joint[4].inv_motor;
-		MotorSend(&hcan2 ,0x200, can_buf);
+		//MotorSend(&hcan2 ,0x200, can_buf);
 
 		vTaskDelayUntil(&Last_wake_time, pdMS_TO_TICKS(5));
 	}
@@ -121,7 +121,6 @@ void MotorSendTask(void *param)// 将电机的数据发送到PC上
 		
 		arm_t.joints[4].rad = Joint[4].RM_motor.motor.Angle_DEG;
 		arm_t.joints[4].omega = Joint[4].RM_motor.motor.Speed;
-		memset(&arm_t.joints[5], 0, sizeof(arm_t.joints[5]));
 		
 		CDC_Transmit_FS((uint8_t*)&arm_t, sizeof(arm_t));
 		vTaskDelayUntil(&Last_wake_time, pdMS_TO_TICKS(10));
@@ -167,9 +166,12 @@ void MotorRecTask(void *param)// 从PC接收电机的期望值
 			Joint[4].exp_torque = arm_Rec_t.joints[4].torque;
 		}else
 		{
-			memset(&Joint->exp_rad,    0, sizeof(Joint->exp_rad));
-			memset(&Joint->exp_omega,  0, sizeof(Joint->exp_omega));
-			memset(&Joint->exp_torque, 0, sizeof(Joint->exp_torque));
+			for(uint8_t i = 0; i < 5; i++)
+			{
+				Joint[i].exp_rad = 0;
+				Joint[i].exp_omega = 0;
+				Joint[i].exp_torque = 0;
+			}
 		}
 	}
 } 

@@ -13,6 +13,11 @@ extern TaskHandle_t Motor_Drive_Handle;
 extern TaskHandle_t MotorSendTask_Handle;
 extern TaskHandle_t MotorRecTask_Handle;
 
+TaskHandle_t MotorInit_Handle;
+TaskHandle_t CAN_Rec_Handle;
+void MotorInitTask(void *pvParameters);
+void CAN_Rec(void *pvParameters);
+
 void Task_Init(void)
 {
     CanFilter_Init(&hcan1);
@@ -23,11 +28,11 @@ void Task_Init(void)
     HAL_CAN_ActivateNotification(&hcan2,CAN_IT_RX_FIFO1_MSG_PENDING);
     HAL_CAN_ActivateNotification(&hcan1,CAN_IT_TX_MAILBOX_EMPTY);
     HAL_CAN_ActivateNotification(&hcan2,CAN_IT_TX_MAILBOX_EMPTY);
-
-    DWT_Init(168);
     
     vPortEnterCritical();
     
+	xTaskCreate(CAN_Rec, "CAN_Rec", 128, NULL, 4, &CAN_Rec_Handle);//记录偏移值
+    xTaskCreate(MotorInitTask, "MotorInitTask", 128, NULL, 4, &MotorInit_Handle);//记录偏移值
     xTaskCreate(MotorSendTask, "MotorSendTask", 128, NULL, 4, &MotorSendTask_Handle);//将数据发送到PC
     xTaskCreate(MotorRecTask, "MotorRecTask", 128, NULL, 4, &MotorRecTask_Handle);//将数据发送到PC
 
@@ -35,7 +40,7 @@ void Task_Init(void)
 
 }
 
-void CAN_Rec_Handle(void *pvParameters)
+void CAN_Rec(void *pvParameters)
 {
     TickType_t last_wake_time = xTaskGetTickCount();
     for(;;)
@@ -74,7 +79,6 @@ void MotorInitTask(void *pvParameters)
             for(uint8_t i = 0; i < 4; i++)
             {
                 Joint[i].pos_offset = Joint[i].Rs_motor.state.rad;
-
             }
             count++;
         }
