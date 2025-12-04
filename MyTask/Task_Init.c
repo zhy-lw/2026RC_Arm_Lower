@@ -4,6 +4,7 @@
 #include "can.h"
 #include "Run.h"
 #include "math.h"
+#include "stdbool.h"
 
 extern Joint_t Joint[5];
 float Motor_Init[4] = {0};
@@ -15,6 +16,24 @@ TaskHandle_t Motor_Reset_Handle;
 
 void MotorInit(void);
 void Motor_reset(void *param);
+
+bool Float_S(float a, float b)
+{
+		return fabsf(a - b) < 0.02f;
+}
+uint8_t F_buf[4] = {0};
+bool Joint_FinInit()
+{
+		F_buf[0] = Float_S(Joint[0].Rs_motor.state.rad, 0 + Joint[0].pos_offset);
+		F_buf[1] = Float_S(Joint[1].Rs_motor.state.rad, 0 + Joint[1].pos_offset);
+		F_buf[2] = Float_S(Joint[2].Rs_motor.state.rad, -1.53 + Joint[2].pos_offset);
+		F_buf[3] = Float_S(Joint[3].Rs_motor.state.rad, 0 + Joint[3].pos_offset);
+		
+		if(F_buf[0] && F_buf[1]&& F_buf[2]&& F_buf[3])
+			return true;
+		else 
+			return false;
+}
 
 void Task_Init(void)
 {
@@ -30,9 +49,8 @@ void Task_Init(void)
     MotorInit();
     
 		xTaskCreate(Motor_Drive, "Motor_Drive", 512, NULL, 4, &Motor_Drive_Handle);//驱动
-		xTaskCreate(Motor_reset, "Motor_reset", 256, NULL, 4, &Motor_Reset_Handle);//驱动
+		xTaskCreate(Motor_reset, "Motor_reset", 256, NULL, 4, &Motor_Reset_Handle);//复位
     xTaskCreate(MotorSendTask, "MotorSendTask", 128, NULL, 4, &MotorSendTask_Handle);//将数据发送到PC
-//    xTaskCreate(MotorRecTask, "MotorRecTask", 128, NULL, 4, &MotorRecTask_Handle);//PC接收数据
 
 }
 
@@ -54,7 +72,7 @@ void Motor_reset(void *param)
 {
     TickType_t Last_wake_time = xTaskGetTickCount();
 		
-		vTaskDelay(1000);
+		vTaskDelay(200);
 		
 		Motor_Init[0] = Joint[0].Rs_motor.state.rad;
 		Motor_Init[1] = Joint[1].Rs_motor.state.rad;
@@ -67,12 +85,17 @@ void Motor_reset(void *param)
 		Joint[3].exp_rad = Motor_Init[3] - Joint[3].pos_offset;
     for (;;)
     {
-        RampToTarget(&Joint[0].exp_rad, 0, 0.0002f);
-				RampToTarget(&Joint[1].exp_rad, 0, 0.0002f);
+        RampToTarget(&Joint[0].exp_rad, 0, 0.0005f);
+				RampToTarget(&Joint[1].exp_rad, 0, 0.0005f);
 				RampToTarget(&Joint[2].exp_rad, -1.53, 0.0002f);
 				RampToTarget(&Joint[3].exp_rad, 0, 0.005f);
-				RampToTarget(&Joint[4].exp_rad, -30000, 500);
-			
+				
+				if(Joint_FinInit())
+				{
+						xTaskCreate(MotorRecTask, "MotorRecTask", 128, NULL, 4, &MotorRecTask_Handle);//PC接收数据
+						vTaskDelete(NULL);
+				}
+				
 				vTaskDelayUntil(&Last_wake_time, pdMS_TO_TICKS(5));
     }
     
@@ -120,21 +143,21 @@ void MotorInit(void)
 	Joint[4].RM_motor.vel_pid.output_limit = 10000.0f;
 	RS_Offest_inv(&Joint[4], 1, 30000.0f);//方向和偏移值
 	
-	PID_Init_Pos(&Joint[0], 1.0f, 0.0f, 0.0f, 100.0f, 2.0f);//位置pid//云台
-	PID_Init_Vel(&Joint[0], 6.3f, 0.65f, 0.0f, 20.0f, 20.0f);//速度pid
+	PID_Init_Pos(&Joint[0], 7.0f, 0.0f, 0.0f, 100.0f, 2.0f);//位置pid//云台
+	PID_Init_Vel(&Joint[0], 6.3f, 0.8f, 0.0f, 20.0f, 20.0f);//速度pid
 	RS_Offest_inv(&Joint[0], 1, 4.31598663f);//方向和偏移值
 
-	PID_Init_Pos(&Joint[1], 1.46f, 0.0f, 0.0f, 100.0f, 1.0f);//大臂
-	PID_Init_Vel(&Joint[1], 6.1f, 0.57f, 0.0f, 20.0f, 20.0f);
+	PID_Init_Pos(&Joint[1], 3.1f, 0.0f, 0.0f, 100.0f, 2.0f);//大臂
+	PID_Init_Vel(&Joint[1], 7.6f, 0.8f, 0.0f, 20.0f, 20.0f);
 	RS_Offest_inv(&Joint[1], 1, 1.78484118f);
 
-	PID_Init_Pos(&Joint[2], 0.37f, 0.0f, 0.0f, 100.0f, 1.0f);//小臂
-	PID_Init_Vel(&Joint[2], 4.0f, 0.5f, 0.0f, 20.0f, 20.0f);
-	RS_Offest_inv(&Joint[2], 1, 5.32691097f);
+	PID_Init_Pos(&Joint[2], 7.0f, 0.0f, 0.0f, 100.0f, 2.0f);//小臂
+	PID_Init_Vel(&Joint[2], 9.0f, 1.2f, 0.0f, 20.0f, 20.0f);
+	RS_Offest_inv(&Joint[2], -1, 5.32691097f);
 
-	PID_Init_Pos(&Joint[3], 0.3f, 0.0f, 0.0f, 100.0f, 1.0f);
+	PID_Init_Pos(&Joint[3], 0.3f, 0.0f, 0.0f, 100.0f, 2.0f);
 	PID_Init_Vel(&Joint[3], 2.0f, 0.3f, 0.0f, 20.0f, 20.0f);
-	RS_Offest_inv(&Joint[3], 1, -1.86806214f);
+	RS_Offest_inv(&Joint[3], -1, -2.0f);
 	
 	vTaskDelay(100);
 	RobStrideInit(&Joint[0].Rs_motor, &hcan1, 0x01, RobStride_03);//云台
