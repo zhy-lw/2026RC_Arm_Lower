@@ -26,7 +26,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "Task_Init.h"
-#include "semphr.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,8 +36,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-SemaphoreHandle_t Can1_semaphore;
-SemaphoreHandle_t Can2_semaphore;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -101,8 +100,7 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
-  Can1_semaphore = xSemaphoreCreateBinary();
-  Can2_semaphore = xSemaphoreCreateBinary();
+
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
