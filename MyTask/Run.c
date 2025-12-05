@@ -97,7 +97,7 @@ void MotorSendTask(void *param)// 将电机的数据发送到PC上
 		arm_t.joints[4].omega = Joint[4].RM_motor.motor.Speed / 36.0f * 3.1415926f /30.0f;
 		
 		CDC_Transmit_FS((uint8_t*)&arm_t, sizeof(arm_t));
-		vTaskDelayUntil(&Last_wake_time, pdMS_TO_TICKS(10));
+		vTaskDelayUntil(&Last_wake_time, pdMS_TO_TICKS(20));
 	}
 }
 
