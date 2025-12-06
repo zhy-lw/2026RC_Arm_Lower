@@ -2,6 +2,8 @@
 #include "usb_trans.h"
 #include "usbd_cdc_if.h"
 
+extern uint8_t ready;
+
 Joint_t Joint[5];
 int16_t can_buf[4] = {0};
 
@@ -36,10 +38,50 @@ void Motor_Drive(void *param)
 
 Arm_t arm_t;
 TaskHandle_t MotorSendTask_Handle;
+
+SemaphoreHandle_t cdc_recv_semphr;
+Arm_t arm_Rec_t;
+uint16_t cur_recv_size;
+
+void CDC_Recv_Cb(uint8_t *src, uint16_t size)
+{
+	if(!ready)
+		return;
+	cur_recv_size=size;
+	if(((Arm_t *)src )->pack_type == 0x01)
+	{
+		memcpy(&arm_Rec_t, src, sizeof(arm_Rec_t));
+		
+		
+		
+		
+		
+			Joint[0].exp_rad = arm_Rec_t.joints[0].rad;
+			Joint[0].exp_omega = arm_Rec_t.joints[0].omega;
+			Joint[0].exp_torque = arm_Rec_t.joints[0].torque;
+				
+			Joint[1].exp_rad = arm_Rec_t.joints[1].rad;
+			Joint[1].exp_omega = arm_Rec_t.joints[1].omega;
+			Joint[1].exp_torque = arm_Rec_t.joints[1].torque;
+			
+			Joint[2].exp_rad = arm_Rec_t.joints[2].rad * Joint[2].pos_offset;
+			Joint[2].exp_omega = arm_Rec_t.joints[2].omega * Joint[2].pos_offset;
+			Joint[2].exp_torque = arm_Rec_t.joints[2].torque * Joint[2].pos_offset;
+			
+			Joint[3].exp_rad = arm_Rec_t.joints[3].rad * Joint[3].pos_offset;
+			Joint[3].exp_omega = arm_Rec_t.joints[3].omega * Joint[3].pos_offset;
+			Joint[3].exp_torque = arm_Rec_t.joints[3].torque * Joint[3].pos_offset;
+			
+			Joint[4].exp_rad =( arm_Rec_t.joints[4].rad / 6.28319f * 36.0f * 8192.0f);
+			Joint[4].exp_omega = arm_Rec_t.joints[4].omega;
+			Joint[4].exp_torque = arm_Rec_t.joints[4].torque;
+	}
+}
+
 void MotorSendTask(void *param)// 将电机的数据发送到PC上
 {
 	TickType_t Last_wake_time = xTaskGetTickCount();
-	
+	USB_CDC_Init(CDC_Recv_Cb, NULL, NULL);
 	arm_t.pack_type = 1;
 	
 	for(;;)
@@ -59,23 +101,10 @@ void MotorSendTask(void *param)// 将电机的数据发送到PC上
 	}
 }
 
-SemaphoreHandle_t cdc_recv_semphr;
-Arm_t arm_Rec_t;
-
-void CDC_Recv_Cb(uint8_t *src, uint16_t size)
-{
-	if(((Arm_t *)src )->pack_type == 0x01)
-	{
-		memcpy(&arm_Rec_t, src, sizeof(arm_Rec_t));
-		xSemaphoreGive(cdc_recv_semphr);
-	}
-	
-}
-
+uint8_t count = 0; 
 TaskHandle_t MotorRecTask_Handle;
 void MotorRecTask(void *param)// 从PC接收电机的期望值
 {
-	USB_CDC_Init(CDC_Recv_Cb, NULL, NULL);
 	TickType_t last_wake_time = xTaskGetTickCount();
 
 	cdc_recv_semphr = xSemaphoreCreateBinary();
@@ -85,25 +114,8 @@ void MotorRecTask(void *param)// 从PC接收电机的期望值
 	{
 		if(xSemaphoreTake(cdc_recv_semphr, pdMS_TO_TICKS(200)) == pdTRUE)
 		{
-			Joint[0].exp_rad = arm_Rec_t.joints[0].rad;
-			Joint[0].exp_omega = arm_Rec_t.joints[0].omega;
-			Joint[0].exp_torque = arm_Rec_t.joints[0].torque;
-				
-			Joint[1].exp_rad = arm_Rec_t.joints[1].rad;
-			Joint[1].exp_omega = arm_Rec_t.joints[1].omega;
-			Joint[1].exp_torque = arm_Rec_t.joints[1].torque;
+			count ++;
 			
-			Joint[2].exp_rad = arm_Rec_t.joints[2].rad * Joint[2].pos_offset;
-			Joint[2].exp_omega = arm_Rec_t.joints[2].omega * Joint[2].pos_offset;
-			Joint[2].exp_torque = arm_Rec_t.joints[2].torque * Joint[2].pos_offset;
-			
-			Joint[3].exp_rad = arm_Rec_t.joints[3].rad * Joint[3].pos_offset;
-			Joint[3].exp_omega = arm_Rec_t.joints[3].omega * Joint[3].pos_offset;
-			Joint[3].exp_torque = arm_Rec_t.joints[3].torque * Joint[3].pos_offset;
-			
-			Joint[4].exp_rad = arm_Rec_t.joints[4].rad;
-			Joint[4].exp_omega = arm_Rec_t.joints[4].omega;
-			Joint[4].exp_torque = arm_Rec_t.joints[4].torque;
 		}
 	}
 } 

@@ -19,14 +19,14 @@ void Motor_reset(void *param);
 
 bool Float_S(float a, float b)
 {
-		return fabsf(a - b) < 0.02f;
+		return fabsf(a - b) < 0.03f;
 }
 uint8_t F_buf[4] = {0};
 bool Joint_FinInit()
 {
 		F_buf[0] = Float_S(Joint[0].Rs_motor.state.rad, 0 + Joint[0].pos_offset);
 		F_buf[1] = Float_S(Joint[1].Rs_motor.state.rad, 0 + Joint[1].pos_offset);
-		F_buf[2] = Float_S(Joint[2].Rs_motor.state.rad, -1.53 + Joint[2].pos_offset);
+		F_buf[2] = Float_S(Joint[2].Rs_motor.state.rad, -1.57 + Joint[2].pos_offset);
 		F_buf[3] = Float_S(Joint[3].Rs_motor.state.rad, 0 + Joint[3].pos_offset);
 		
 		if(F_buf[0] && F_buf[1]&& F_buf[2]&& F_buf[3])
@@ -48,8 +48,8 @@ void Task_Init(void)
     
     MotorInit();
     
-		xTaskCreate(Motor_Drive, "Motor_Drive", 512, NULL, 4, &Motor_Drive_Handle);//驱动
-		xTaskCreate(Motor_reset, "Motor_reset", 256, NULL, 4, &Motor_Reset_Handle);//复位
+		xTaskCreate(Motor_Drive, "Motor_Drive", 628, NULL, 4, &Motor_Drive_Handle);//驱动
+		xTaskCreate(Motor_reset, "Motor_reset", 300, NULL, 4, &Motor_Reset_Handle);//复位
     xTaskCreate(MotorSendTask, "MotorSendTask", 128, NULL, 4, &MotorSendTask_Handle);//将数据发送到PC
 
 }
@@ -67,6 +67,8 @@ void RampToTarget(float *val, float target, float step)//斜坡
         *val += (diff > 0 ? step : -step);
     }
 }
+
+uint8_t ready=0;
 
 void Motor_reset(void *param)
 {
@@ -87,12 +89,13 @@ void Motor_reset(void *param)
     {
         RampToTarget(&Joint[0].exp_rad, 0, 0.0005f);
 				RampToTarget(&Joint[1].exp_rad, 0, 0.0005f);
-				RampToTarget(&Joint[2].exp_rad, -1.53, 0.0002f);
+				RampToTarget(&Joint[2].exp_rad, -1.57, 0.0002f);
 				RampToTarget(&Joint[3].exp_rad, 0, 0.005f);
 				
 				if(Joint_FinInit())
 				{
-						xTaskCreate(MotorRecTask, "MotorRecTask", 128, NULL, 4, &MotorRecTask_Handle);//PC接收数据
+					ready=1;
+						//xTaskCreate(MotorRecTask, "MotorRecTask", 200, NULL, 4, &MotorRecTask_Handle);//PC接收数据
 						vTaskDelete(NULL);
 				}
 				
@@ -127,6 +130,7 @@ void RS_Offest_inv(Joint_t *Joint, int8_t inv_motor, float pos_offset)
 
 void MotorInit(void)
 {
+	vTaskDelay(2000);
   Joint[4].RM_motor.hcan = &hcan2;
 	Joint[4].RM_motor.ID = 0x0201;
 
@@ -153,11 +157,11 @@ void MotorInit(void)
 
 	PID_Init_Pos(&Joint[2], 7.0f, 0.0f, 0.0f, 100.0f, 2.0f);//小臂
 	PID_Init_Vel(&Joint[2], 9.0f, 1.2f, 0.0f, 20.0f, 20.0f);
-	RS_Offest_inv(&Joint[2], -1, 5.32691097f);
+	RS_Offest_inv(&Joint[2], -1, 5.61408577f);
 
 	PID_Init_Pos(&Joint[3], 0.3f, 0.0f, 0.0f, 100.0f, 2.0f);
 	PID_Init_Vel(&Joint[3], 2.0f, 0.3f, 0.0f, 20.0f, 20.0f);
-	RS_Offest_inv(&Joint[3], -1, -2.0f);
+	RS_Offest_inv(&Joint[3], -1, -1.90219426f);
 	
 	vTaskDelay(100);
 	RobStrideInit(&Joint[0].Rs_motor, &hcan1, 0x01, RobStride_03);//云台
