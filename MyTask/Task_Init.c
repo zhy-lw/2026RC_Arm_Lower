@@ -26,7 +26,7 @@ bool Joint_FinInit()
 {
 		F_buf[0] = Float_S(Joint[0].Rs_motor.state.rad, 0 + Joint[0].pos_offset);
 		F_buf[1] = Float_S(Joint[1].Rs_motor.state.rad, 0 + Joint[1].pos_offset);
-		F_buf[2] = Float_S(Joint[2].Rs_motor.state.rad, -1.57 + Joint[2].pos_offset);
+		F_buf[2] = Float_S(Joint[2].Rs_motor.state.rad, 0 + Joint[2].pos_offset);
 		F_buf[3] = Float_S(Joint[3].Rs_motor.state.rad, 0 + Joint[3].pos_offset);
 		
 		if(F_buf[0] && F_buf[1]&& F_buf[2]&& F_buf[3])
@@ -74,7 +74,7 @@ void Motor_reset(void *param)
 {
     TickType_t Last_wake_time = xTaskGetTickCount();
 		
-		vTaskDelay(200);
+		vTaskDelay(20);
 		
 		Motor_Init[0] = Joint[0].Rs_motor.state.rad;
 		Motor_Init[1] = Joint[1].Rs_motor.state.rad;
@@ -87,16 +87,15 @@ void Motor_reset(void *param)
 		Joint[3].exp_rad = Motor_Init[3] - Joint[3].pos_offset;
     for (;;)
     {
-        RampToTarget(&Joint[0].exp_rad, 0, 0.0005f);
-				RampToTarget(&Joint[1].exp_rad, 0, 0.0005f);
-				RampToTarget(&Joint[2].exp_rad, -1.57, 0.0002f);
+        RampToTarget(&Joint[0].exp_rad, 0, 0.001f);
+				RampToTarget(&Joint[1].exp_rad, 0, 0.001f);
+				RampToTarget(&Joint[2].exp_rad, 0, 0.001f);
 				RampToTarget(&Joint[3].exp_rad, 0, 0.005f);
 				
 				if(Joint_FinInit())
 				{
-					ready=1;
-						//xTaskCreate(MotorRecTask, "MotorRecTask", 200, NULL, 4, &MotorRecTask_Handle);//PC接收数据
-						vTaskDelete(NULL);
+					xTaskCreate(MotorRecTask, "MotorRecTask", 200, NULL, 4, &MotorRecTask_Handle);//PC接收数据
+					vTaskDelete(NULL);
 				}
 				
 				vTaskDelayUntil(&Last_wake_time, pdMS_TO_TICKS(5));
@@ -151,15 +150,15 @@ void MotorInit(void)
 	PID_Init_Vel(&Joint[0], 6.3f, 0.8f, 0.0f, 20.0f, 20.0f);//速度pid
 	RS_Offest_inv(&Joint[0], 1, 4.31598663f);//方向和偏移值
 
-	PID_Init_Pos(&Joint[1], 3.1f, 0.0f, 0.0f, 100.0f, 2.0f);//大臂
+	PID_Init_Pos(&Joint[1], 3.1f, 0.0f, 0.0f, 100.0f, 2.5f);//大臂
 	PID_Init_Vel(&Joint[1], 7.6f, 0.8f, 0.0f, 20.0f, 20.0f);
 	RS_Offest_inv(&Joint[1], 1, 1.78484118f);
 
-	PID_Init_Pos(&Joint[2], 7.0f, 0.0f, 0.0f, 100.0f, 2.0f);//小臂
-	PID_Init_Vel(&Joint[2], 9.0f, 1.2f, 0.0f, 20.0f, 20.0f);
-	RS_Offest_inv(&Joint[2], -1, 5.61408577f);
+	PID_Init_Pos(&Joint[2], 7.0f, 0.0f, 0.0f, 100.0f, 4.2f);//小臂
+	PID_Init_Vel(&Joint[2], 9.0f, 1.2f, 0.0f, 20.0f, 10.0f);
+	RS_Offest_inv(&Joint[2], -1, 5.21f);
 
-	PID_Init_Pos(&Joint[3], 0.3f, 0.0f, 0.0f, 100.0f, 2.0f);
+	PID_Init_Pos(&Joint[3], 50.3f, 0.0f, 0.0f, 100.0f, 20.0f);
 	PID_Init_Vel(&Joint[3], 2.0f, 0.3f, 0.0f, 20.0f, 20.0f);
 	RS_Offest_inv(&Joint[3], -1, -1.90219426f);
 	

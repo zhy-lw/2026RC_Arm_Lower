@@ -45,36 +45,11 @@ uint16_t cur_recv_size;
 
 void CDC_Recv_Cb(uint8_t *src, uint16_t size)
 {
-	if(!ready)
-		return;
 	cur_recv_size=size;
 	if(((Arm_t *)src )->pack_type == 0x01)
 	{
 		memcpy(&arm_Rec_t, src, sizeof(arm_Rec_t));
-		
-		
-		
-		
-		
-			Joint[0].exp_rad = arm_Rec_t.joints[0].rad;
-			Joint[0].exp_omega = arm_Rec_t.joints[0].omega;
-			Joint[0].exp_torque = arm_Rec_t.joints[0].torque;
-				
-			Joint[1].exp_rad = arm_Rec_t.joints[1].rad;
-			Joint[1].exp_omega = arm_Rec_t.joints[1].omega;
-			Joint[1].exp_torque = arm_Rec_t.joints[1].torque;
-			
-			Joint[2].exp_rad = arm_Rec_t.joints[2].rad * Joint[2].pos_offset;
-			Joint[2].exp_omega = arm_Rec_t.joints[2].omega * Joint[2].pos_offset;
-			Joint[2].exp_torque = arm_Rec_t.joints[2].torque * Joint[2].pos_offset;
-			
-			Joint[3].exp_rad = arm_Rec_t.joints[3].rad * Joint[3].pos_offset;
-			Joint[3].exp_omega = arm_Rec_t.joints[3].omega * Joint[3].pos_offset;
-			Joint[3].exp_torque = arm_Rec_t.joints[3].torque * Joint[3].pos_offset;
-			
-			Joint[4].exp_rad =( arm_Rec_t.joints[4].rad / 6.28319f * 36.0f * 8192.0f);
-			Joint[4].exp_omega = arm_Rec_t.joints[4].omega;
-			Joint[4].exp_torque = arm_Rec_t.joints[4].torque;
+		xSemaphoreGive(cdc_recv_semphr);
 	}
 }
 
@@ -115,7 +90,26 @@ void MotorRecTask(void *param)// 从PC接收电机的期望值
 		if(xSemaphoreTake(cdc_recv_semphr, pdMS_TO_TICKS(200)) == pdTRUE)
 		{
 			count ++;
-			
+			Joint[0].exp_rad = arm_Rec_t.joints[0].rad;
+			Joint[0].exp_omega = arm_Rec_t.joints[0].omega;
+			Joint[0].exp_torque = arm_Rec_t.joints[0].torque;
+
+			Joint[1].exp_rad = arm_Rec_t.joints[1].rad;
+			Joint[1].exp_omega = arm_Rec_t.joints[1].omega;
+			Joint[1].exp_torque = arm_Rec_t.joints[1].torque;
+
+			Joint[2].exp_rad = arm_Rec_t.joints[2].rad * Joint[2].inv_motor;
+			Joint[2].exp_omega = arm_Rec_t.joints[2].omega * Joint[2].inv_motor;
+			Joint[2].exp_torque = arm_Rec_t.joints[2].torque * Joint[2].inv_motor;
+
+			Joint[3].exp_rad = arm_Rec_t.joints[3].rad * Joint[3].inv_motor;
+			Joint[3].exp_omega = arm_Rec_t.joints[3].omega * Joint[3].inv_motor;
+			Joint[3].exp_torque = arm_Rec_t.joints[3].torque * Joint[3].inv_motor;
+
+			Joint[4].exp_rad =( arm_Rec_t.joints[4].rad / 6.28319f * 36.0f * 8192.0f);
+			Joint[4].exp_omega = arm_Rec_t.joints[4].omega;
+			Joint[4].exp_torque = arm_Rec_t.joints[4].torque;
+
 		}
 	}
 } 
